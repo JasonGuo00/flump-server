@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+    <body>
+        <script>
+            function handleResponse(res) {
+                console.log(res)
+                console.log(res.credential)
+                window.location.replace("flump://login?data=" + res.credential)
+            }
+        </script>
+        <script src="https://accounts.google.com/gsi/client" async defer></script>
+        <div id="g_id_onload"
+            data-client_id="892481080436-s2tcmq2ju05cl7kk58sdm3bvh5vbe28v.apps.googleusercontent.com"
+            data-context="signin"
+            data-ux_mode="popup"
+            data-callback="handleResponse">
+        </div>
+
+        <div class="g_id_signin"
+            data-type="standard"
+            data-shape="rectangular"
+            data-theme="outline"
+            data-text="signin_with"
+            data-size="large"
+            data-logo_alignment="left">
+        </div>
+    </body>
+</html>
