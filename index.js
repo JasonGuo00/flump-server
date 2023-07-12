@@ -83,6 +83,28 @@ io.on('connection', (socket) => {
         }
     })
 
+    // Client will send 'checkLobby' to test lobby login and possibly permit the user
+    socket.on('checkLobby', (lobby_id, lobby_password) => {
+        lobby = searchLobbyId(lobby_id)
+
+        console.log(lobby_password)
+        if (lobby === null) {
+            socket.emit('noLobby')
+        } else if (lobby.privacy.localeCompare('yes') === 0 && lobby.password.localeCompare(lobby_password) !== 0) {
+            socket.emit('noPassword')
+        } else {
+            lobby_logged_in = true
+            socket.emit('joinLobby', lobby.id)
+        }
+    })
+
+    // Client will send 'createLobby' to create a lobby
+    socket.on('createLobby', (name, privacy, description, password) => {
+        lobby = createNewLobby(name, privacy, description, password)
+        lobby_logged_in = true
+        socket.emit('joinLobby', lobby.id)
+    })
+
     // The following requests require the user to be logged into the lobby
 
     // Client will send 'addVideo' when the user inputs a youtube video link and requests to add it to the list
@@ -137,9 +159,20 @@ io.on('connection', (socket) => {
             io.to('lobby1').emit('receiveInfo', playbackState, playbackTime)
         }
     })
+    // Every second, clients will send back playback time for server use -> a large difference in time is assumed to be a "scrub"
     socket.on('updateTime', (playerTime) => {
+        if(Math.abs(prevRuntime - playerTime) > 4) {
+            // Consider it a scrub
+            io.to('lobby1').emit('receiveInfo', prevState, playerTime)
+        }
         prevRuntime = playerTime
     })
+
+    // Call the clients to update playback rate
+    socket.on('playbackRateChange', (playbackRate) => {
+        io.to('lobby1').emit('rateChange', playbackRate)
+    })
+
     // Sent automatically when the client disconnects from the server
     socket.on('disconnect', () => {
         if (lobby === null || lobby_logged_in === false) {
