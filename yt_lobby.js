@@ -1,9 +1,26 @@
 class Lobby {
     // Constructor: lobby takes a name and a playlist
-    constructor(name) {
+    constructor(id, name, privacy, description, password) {
+        this.id = id
         this.name = name
+        this.privacy = privacy
+        this.description = description
+        this.password = password
         this.playlist = []
         this.loop = false
+        this.connections = []
+    }
+
+    addConnection(socket) {
+        this.connections.push(socket)
+    }
+
+    removeConnection(socket) {
+        this.connections.splice(this.connections.indexOf(socket), 1)
+    }
+
+    connectionLength() {
+        return this.connections.length
     }
 
     // Add a video to the lobby's playlist -> duplicate checking included
@@ -50,6 +67,8 @@ class Lobby {
         }
         return false
     }
+
+
 }
 
 module.exports = Lobby
