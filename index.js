@@ -1,7 +1,8 @@
 const app = require('express')()
 const server = require('http').createServer(app)
 const io = require('socket.io')(server)
-fs = require('fs');
+const fs = require('fs');
+const jwt = require('jsonwebtoken');
 
 // How many connections are there
 let connections = 0;
@@ -79,13 +80,32 @@ async function awaitPeerConnection (receivers, io) {
 }
 
 
-io.on('connection', (socket) => {
-    let lobby = null;
-    let lobby_logged_in = false;
+io.on('connection', async (socket) => {
+    let lobby = null
+    let lobby_logged_in = false
+    let decoded_token
+    let authenticated = false
+
     console.log('A client connected')
     socket.join('lobby1')
 
-    // ----------------------------------------- Lobby Stuff -------------------------------------------------
+    // Testing
+    socket.on('buttonClick', () => {
+        console.log('buttonClick')
+        socket.emit('serverResponse', 'Bing Chilling')
+    })
+
+    socket.on("authenticate", (token) => {
+        jwt.verify(token, 'OyIxHEBPZOuaZsY2P5KvsjnVScKoalpe4', function(err, decoded) {
+            if (err || decoded == null) {
+                console.log("FUCK")
+            } else {
+                decoded_token = decoded
+                console.log(decoded_token)
+                authenticated = true;
+            }
+        })
+    })
 
     // Client will send 'lobbyJoin' when connecting to server to retrieve any persisting information necessary
     socket.on('lobbyJoin', () => {
