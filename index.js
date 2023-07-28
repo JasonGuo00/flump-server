@@ -52,27 +52,31 @@ function searchLobbyId(id) {
     return null
 }
 
-io.use(function(socket, next){
-    if (socket.handshake.query && socket.handshake.query.token){
-      jwt.verify(socket.handshake.query.token, 'OyIxHEBPZOuaZsY2P5KvsjnVScKoalpe', function(err, decoded) {
-        if (err) return next(new Error('Authentication error'));
-        socket.decoded = decoded;
-        next();
-      });
-    }
-    else {
-      next(new Error('Authentication error'));
-    }    
-}).on('connection', async (socket) => {
-    let lobby = null;
-    let lobby_logged_in = false;
+io.on('connection', async (socket) => {
+    let lobby = null
+    let lobby_logged_in = false
+    let decoded_token
+    let authenticated = false
 
     console.log('A client connected')
-    console.log(socket.decoded)
     socket.join('lobby1')
+
     // Testing
     socket.on('buttonClick', () => {
+        console.log('buttonClick')
         socket.emit('serverResponse', 'Bing Chilling')
+    })
+
+    socket.on("authenticate", (token) => {
+        jwt.verify(token, 'OyIxHEBPZOuaZsY2P5KvsjnVScKoalpe4', function(err, decoded) {
+            if (err || decoded == null) {
+                console.log("FUCK")
+            } else {
+                decoded_token = decoded
+                console.log(decoded_token)
+                authenticated = true;
+            }
+        })
     })
 
     // Client will send 'lobbyJoin' when connecting to server to retrieve any persisting information necessary
