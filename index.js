@@ -3,13 +3,24 @@ const server = require('http').createServer(app)
 const io = require('socket.io')(server)
 fs = require('fs');
 
+// How many connections are there
+let connections = 0;
 // Import Lobby class
 const Lobby = require('./yt_lobby.js')
 // Make a Lobby instance called 'lobby'
 const lobby = new Lobby('test')
 // To handle registering new player states
 let prevState = -5
+// Keeps track of player time stamps
 let prevRuntime = 0
+// Keeps track of whether or not someone is streaming
+let sharing = false
+// Syncronizes peer-peer connections
+let creatingConnection = false;
+let sockets = []
+let receivers = []
+let initiator = null
+let counter = 0
 
 app.get('/login', (req, res) => {
     res.writeHead(200, { 'content-type': 'text/html' })
@@ -56,16 +67,25 @@ function searchLobbyId(id) {
     return null
 }
 
+// Ensure that peers are created one at a time to avoid any mixups
+async function awaitPeerConnection (receivers, io) {
+    if(counter < receivers.length) {
+        console.log("Creating a peer-peer connection with", receivers[counter])
+        io.to(initiator).emit('startConnection', receivers[counter])
+    }
+    else {
+        console.log("No more connections to create")
+    }
+}
+
+
 io.on('connection', (socket) => {
     let lobby = null;
     let lobby_logged_in = false;
-
     console.log('A client connected')
     socket.join('lobby1')
-    // Testing
-    socket.on('buttonClick', () => {
-        socket.emit('serverResponse', 'Bing Chilling')
-    })
+
+    // ----------------------------------------- Lobby Stuff -------------------------------------------------
 
     // Client will send 'lobbyJoin' when connecting to server to retrieve any persisting information necessary
     socket.on('lobbyJoin', () => {
@@ -106,6 +126,8 @@ io.on('connection', (socket) => {
     })
 
     // The following requests require the user to be logged into the lobby
+
+    // ------------------------------------ YouTube Stuff -----------------------------------------------
 
     // Client will send 'addVideo' when the user inputs a youtube video link and requests to add it to the list
     socket.on('addVideo', (video_id) => {
@@ -171,6 +193,62 @@ io.on('connection', (socket) => {
     // Call the clients to update playback rate
     socket.on('playbackRateChange', (playbackRate) => {
         io.to('lobby1').emit('rateChange', playbackRate)
+    })
+
+    // -------------------------- SHARE SCREEN STUFF ------------------------------
+    // Tracking connections
+    socket.on('connectSS', (id) => {
+        if(sockets.indexOf(id) === -1) {
+            connections++
+            console.log("Socket " + id + " connected.  Total connections: ", connections)
+            sockets.push(id)
+            console.log(sockets)    
+            // Create peer connection if clients join mid-stream
+            if(sharing) {
+                // Case 1: All existing connections are fully established or no peers currently exist
+                if(counter === receivers.length || counter === 0) {
+                    receivers.push(id)
+                    awaitPeerConnection(receivers, io)
+                }
+                // Case 2: In the middle of creating connections
+                else {
+                    receivers.push(id)
+                }
+            }
+        }
+    })
+    // Observe request to initiateSharing
+    socket.on('initiateSharing', (id) => {
+        sharing = true
+        initiator = id
+        if(sockets.length > 1) {
+            // Create the list of sockets to share to
+            receivers = sockets.filter((sock) => sock != initiator)
+            console.log(initiator, receivers)
+            // Create a peer connection for the first receiver if one exists
+            awaitPeerConnection(receivers, io)
+        }
+    })
+    // Receives offer data from the initiator, sends it to the receiver
+    socket.on('offer', (data, receiver) => {
+        io.to(receiver).emit('offer', data)
+        if(!sharing) {sharing = true}
+    })
+    // Receives answer data from the receiver, sends it to the initiator
+    socket.on('answer', (data) => {
+        io.to(initiator).emit('answer', data)
+    })
+    // Handle cleanup after a client stops streaming
+    socket.on('shareEnded', () => {
+        io.to('lobby1').emit('shareEnded')
+        receivers = []
+        initiator = null
+        counter = 0
+        sharing = false
+    })
+    socket.on('nextConnection', () => {
+        counter++;
+        awaitPeerConnection(receivers, io)
     })
 
     // Sent automatically when the client disconnects from the server
