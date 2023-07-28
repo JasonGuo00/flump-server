@@ -1,7 +1,8 @@
 const app = require('express')()
 const server = require('http').createServer(app)
 const io = require('socket.io')(server)
-fs = require('fs');
+const fs = require('fs');
+const jwt = require('jsonwebtoken');
 
 // Import Lobby class
 const Lobby = require('./yt_lobby.js')
@@ -10,11 +11,6 @@ const lobby = new Lobby('test')
 // To handle registering new player states
 let prevState = -5
 let prevRuntime = 0
-
-app.get('/login', (req, res) => {
-    res.writeHead(200, { 'content-type': 'text/html' })
-    fs.createReadStream('googlelogin.html').pipe(res)
-})
 
 let lobbies = [];
 
@@ -56,11 +52,23 @@ function searchLobbyId(id) {
     return null
 }
 
-io.on('connection', (socket) => {
+io.use(function(socket, next){
+    if (socket.handshake.query && socket.handshake.query.token){
+      jwt.verify(socket.handshake.query.token, 'OyIxHEBPZOuaZsY2P5KvsjnVScKoalpe', function(err, decoded) {
+        if (err) return next(new Error('Authentication error'));
+        socket.decoded = decoded;
+        next();
+      });
+    }
+    else {
+      next(new Error('Authentication error'));
+    }    
+}).on('connection', async (socket) => {
     let lobby = null;
     let lobby_logged_in = false;
 
     console.log('A client connected')
+    console.log(socket.decoded)
     socket.join('lobby1')
     // Testing
     socket.on('buttonClick', () => {
