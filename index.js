@@ -4,7 +4,7 @@ const io = require('socket.io')(server)
 const fs = require('fs');
 const jwt = require('jsonwebtoken');
 
-const { setupTheater } = require('./sockets/theater.js')
+const { setupTheater, disconnectTheater } = require('./sockets/theater.js')
 const { setupShareScreen } = require('./sockets/sharescreen.js')
 
 
@@ -34,9 +34,17 @@ io.on('connection', async (socket) => {
                 
                 setupTheater(io, socket)
                 setupShareScreen(io, socket)
+
+                // Sent automatically when the client disconnects from the server
+                socket.on('disconnect', () => {
+                    disconnectTheater()
+
+                    console.log('A client disconnected')
+                })
             }
         })
     })
+
 
     
 })

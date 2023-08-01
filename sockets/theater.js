@@ -48,6 +48,21 @@ function searchLobbyId(id) {
     return null
 }
 
+function disconnectTheater() {
+    if (lobby === null || lobby_logged_in === false) {
+        socket.emit('theater:noLobby')
+        return
+    }
+    lobby.removeConnection(socket)
+
+    if (lobby.connectionLength() === 0) {
+        lobbies.splice(lobbies.indexOf(lobby), 1)
+    }
+
+    lobby = null
+    lobby_logged_in = false
+}
+
 function setupTheater(io, socket) {
     // Client will send 'lobbyJoin' when connecting to server to retrieve any persisting information necessary
     socket.on('theater:joinLobby', () => {
@@ -156,23 +171,9 @@ function setupTheater(io, socket) {
     socket.on('theater:playbackRateChange', (playbackRate) => {
         io.to('lobby1').emit('theater:rateChange', playbackRate)
     })
-
-    // Sent automatically when the client disconnects from the server
-    socket.on('disconnect', () => {
-        if (lobby === null || lobby_logged_in === false) {
-            socket.emit('theater:noLobby')
-            return
-        }
-        lobby.removeConnection(socket)
-
-        if (lobby.connectionLength() === 0) {
-            lobbies.splice(lobbies.indexOf(lobby), 1)
-        }
-
-        console.log('A client disconnected')
-    })
 }
 
 module.exports = {
     setupTheater
+    disconnectTheater
 }
