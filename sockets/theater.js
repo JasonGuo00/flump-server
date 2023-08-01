@@ -50,41 +50,41 @@ function searchLobbyId(id) {
 
 function setupTheater(io, socket) {
     // Client will send 'lobbyJoin' when connecting to server to retrieve any persisting information necessary
-    socket.on('lobbyJoin', () => {
+    socket.on('theater:joinLobby', () => {
         if (lobby === null || lobby_logged_in === false) {
-            socket.emit('noLobby')
+            socket.emit('theater:noLobby')
             return
         }
         lobby.addConnection(socket)
 
-        socket.emit('playVideo', lobby.playlist[0])
-        socket.emit('updatePlaylist', lobby.playlist)
+        socket.emit('theater:playVideo', lobby.playlist[0])
+        socket.emit('theater:updatePlaylist', lobby.playlist)
         if(prevState !== -5) {
             // console.log("Sending old runtime information: previous state = " + prevState + " prev time = " + prevRuntime)
-            socket.emit('receiveInfo', prevState, prevRuntime)
+            socket.emit('theater:receiveInfo', prevState, prevRuntime)
         }
     })
 
     // Client will send 'checkLobby' to test lobby login and possibly permit the user
-    socket.on('checkLobby', (lobby_id, lobby_password) => {
+    socket.on('theater:checkLobby', (lobby_id, lobby_password) => {
         lobby = searchLobbyId(lobby_id)
 
         console.log(lobby_password)
         if (lobby === null) {
-            socket.emit('noLobby')
+            socket.emit('theater:noLobby')
         } else if (lobby.privacy.localeCompare('yes') === 0 && lobby.password.localeCompare(lobby_password) !== 0) {
-            socket.emit('noPassword')
+            socket.emit('theater:noPassword')
         } else {
             lobby_logged_in = true
-            socket.emit('joinLobby', lobby.id)
+            socket.emit('theater:pushLobbyScene', lobby.id)
         }
     })
 
     // Client will send 'createLobby' to create a lobby
-    socket.on('createLobby', (name, privacy, description, password) => {
+    socket.on('theater:createLobby', (name, privacy, description, password) => {
         lobby = createNewLobby(name, privacy, description, password)
         lobby_logged_in = true
-        socket.emit('joinLobby', lobby.id)
+        socket.emit('theater:pushLobbyScene', lobby.id)
     })
 
     // The following requests require the user to be logged into the lobby
@@ -92,9 +92,9 @@ function setupTheater(io, socket) {
     // ------------------------------------ YouTube Stuff -----------------------------------------------
 
     // Client will send 'addVideo' when the user inputs a youtube video link and requests to add it to the list
-    socket.on('addVideo', (video_id) => {
+    socket.on('theater:addVideo', (video_id) => {
         if (lobby === null || lobby_logged_in === false) {
-            socket.emit('noLobby')
+            socket.emit('theater:noLobby')
             return
         }
         console.log('Received video ID:', video_id)
@@ -106,15 +106,15 @@ function setupTheater(io, socket) {
         if(length == 1) {
             // if length == 1, then that means before the video added, the list was empty
             // socket.emit('playVideo', lobby.playlist[0])
-            io.to('lobby1').emit('playVideo', lobby.playlist[0])
+            io.to('lobby1').emit('theater:playVideo', lobby.playlist[0])
         }
         // socket.emit('updatePlaylist', lobby.playlist);
-        io.to('lobby1').emit('updatePlaylist', lobby.playlist)
+        io.to('lobby1').emit('theater:updatePlaylist', lobby.playlist)
     })
     // Client will send 'goNext' when either the video ends, or user requests to skip
-    socket.on('goNext', () => {
+    socket.on('theater:goNext', () => {
         if (lobby === null || lobby_logged_in === false) {
-            socket.emit('noLobby')
+            socket.emit('theater:noLobby')
             return
         }
 
@@ -122,45 +122,45 @@ function setupTheater(io, socket) {
         lobby.removeVideo()
         // socket.emit('playVideo', lobby.playlist[0])
         // socket.emit('updatePlaylist', lobby.playlist)
-        io.to('lobby1').emit('playVideo', lobby.playlist[0])
-        io.to('lobby1').emit('updatePlaylist', lobby.playlist)
+        io.to('lobby1').emit('theater:playVideo', lobby.playlist[0])
+        io.to('lobby1').emit('theater:updatePlaylist', lobby.playlist)
     })
     // Client will send 'toggleLoop' when they click the 'Loop' button
-    socket.on('toggleLoop', () => {
+    socket.on('theater:toggleLoop', () => {
         if (lobby === null || lobby_logged_in === false) {
-            socket.emit('noLobby')
+            socket.emit('theater:noLobby')
             return
         }
         lobby.toggleLoop()
         console.log("Loop Toggled: ", lobby.loop)
     })
-    socket.on('playbackChange', (playbackState, playbackTime) => {
+    socket.on('theater:playbackChange', (playbackState, playbackTime) => {
         console.log("Playback State Received: ", playbackState)
         if(prevState !== playbackState) {
             prevState = playbackState
             console.log("Change detected: sending new info...")
-            // socket.emit('receiveInfo', playbackState, playbackTime)
-            io.to('lobby1').emit('receiveInfo', playbackState, playbackTime)
+            // socket.emit('theater:receiveInfo', playbackState, playbackTime)
+            io.to('lobby1').emit('theater:receiveInfo', playbackState, playbackTime)
         }
     })
     // Every second, clients will send back playback time for server use -> a large difference in time is assumed to be a "scrub"
-    socket.on('updateTime', (playerTime) => {
+    socket.on('theater:updateTime', (playerTime) => {
         if(Math.abs(prevRuntime - playerTime) > 4) {
             // Consider it a scrub
-            io.to('lobby1').emit('receiveInfo', prevState, playerTime)
+            io.to('lobby1').emit('theater:receiveInfo', prevState, playerTime)
         }
         prevRuntime = playerTime
     })
 
     // Call the clients to update playback rate
-    socket.on('playbackRateChange', (playbackRate) => {
-        io.to('lobby1').emit('rateChange', playbackRate)
+    socket.on('theater:playbackRateChange', (playbackRate) => {
+        io.to('lobby1').emit('theater:rateChange', playbackRate)
     })
 
     // Sent automatically when the client disconnects from the server
     socket.on('disconnect', () => {
         if (lobby === null || lobby_logged_in === false) {
-            socket.emit('noLobby')
+            socket.emit('theater:noLobby')
             return
         }
         lobby.removeConnection(socket)

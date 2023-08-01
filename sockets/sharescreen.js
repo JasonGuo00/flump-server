@@ -13,7 +13,7 @@ let counter = 0
 async function awaitPeerConnection (receivers, io) {
     if(counter < receivers.length) {
         console.log("Creating a peer-peer connection with", receivers[counter])
-        io.to(initiator).emit('startConnection', receivers[counter])
+        io.to(initiator).emit('share:startConnection', receivers[counter])
     }
     else {
         console.log("No more connections to create")
@@ -23,7 +23,7 @@ async function awaitPeerConnection (receivers, io) {
 function setupShareScreen(io, socket) {
     // -------------------------- SHARE SCREEN STUFF ------------------------------
     // Tracking connections
-    socket.on('connectSS', (id) => {
+    socket.on('share:connect', (id) => {
         if(sockets.indexOf(id) === -1) {
             connections++
             console.log("Socket " + id + " connected.  Total connections: ", connections)
@@ -44,7 +44,7 @@ function setupShareScreen(io, socket) {
         }
     })
     // Observe request to initiateSharing
-    socket.on('initiateSharing', (id) => {
+    socket.on('share:initiateSharing', (id) => {
         sharing = true
         initiator = id
         if(sockets.length > 1) {
@@ -56,23 +56,23 @@ function setupShareScreen(io, socket) {
         }
     })
     // Receives offer data from the initiator, sends it to the receiver
-    socket.on('offer', (data, receiver) => {
-        io.to(receiver).emit('offer', data)
+    socket.on('share:offer', (data, receiver) => {
+        io.to(receiver).emit('share:offer', data)
         if(!sharing) {sharing = true}
     })
     // Receives answer data from the receiver, sends it to the initiator
-    socket.on('answer', (data) => {
-        io.to(initiator).emit('answer', data)
+    socket.on('share:answer', (data) => {
+        io.to(initiator).emit('share:answer', data)
     })
     // Handle cleanup after a client stops streaming
-    socket.on('shareEnded', () => {
-        io.to('lobby1').emit('shareEnded')
+    socket.on('share:shareEnded', () => {
+        io.to('lobby1').emit('share:shareEnded')
         receivers = []
         initiator = null
         counter = 0
         sharing = false
     })
-    socket.on('nextConnection', () => {
+    socket.on('share:nextConnection', () => {
         counter++;
         awaitPeerConnection(receivers, io)
     })   
