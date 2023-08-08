@@ -1,3 +1,5 @@
+let session_data
+
 // How many connections are there
 let connections = 0;
 // Keeps track of whether or not someone is streaming
@@ -20,7 +22,8 @@ async function awaitPeerConnection (receivers, io) {
     }
 }
 
-function setupShareScreen(io, socket) {
+function setupShareScreen(io, socket, data) {
+    session_data = data
     // -------------------------- SHARE SCREEN STUFF ------------------------------
     // Tracking connections
     socket.on('share:connect', (id) => {

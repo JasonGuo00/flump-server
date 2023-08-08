@@ -4,7 +4,8 @@ const io = require('socket.io')(server)
 const fs = require('fs');
 const jwt = require('jsonwebtoken');
 
-const { setupTheater, disconnectTheater } = require('./sockets/theater.js')
+const { setupLobbies, disconnectLobby } = require('./sockets/lobby.js')
+const { setupTheater } = require('./sockets/theater.js')
 const { setupShareScreen } = require('./sockets/sharescreen.js')
 
 
@@ -27,17 +28,23 @@ io.on('connection', async (socket) => {
     socket.on("authenticate", (token) => {
         jwt.verify(token, 'OyIxHEBPZOuaZsY2P5KvsjnVScKoalpe', function(err, decoded) {
             if (err || decoded == null) {
-                console.log("FUCK")
+                console.log("Unable to Verify")
             } else {
-                decoded_token = decoded
-                console.log(decoded_token)
+                console.log(decoded)
                 
-                setupTheater(io, socket)
-                setupShareScreen(io, socket)
+                let session_data = {
+                    token: decoded,
+                    lobby: null,
+                    lobby_logged_in: false
+                }
+
+                setupLobbies(io, socket, session_data)
+                setupTheater(io, socket, session_data)
+                setupShareScreen(io, socket, session_data)
 
                 // Sent automatically when the client disconnects from the server
                 socket.on('disconnect', () => {
-                    disconnectTheater()
+                    disconnectLobby()
 
                     console.log('A client disconnected')
                 })

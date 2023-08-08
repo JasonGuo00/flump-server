@@ -67,8 +67,6 @@ class Lobby {
         }
         return false
     }
-
-
 }
 
 module.exports = Lobby
