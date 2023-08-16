@@ -41,7 +41,7 @@ function searchLobbyId(id) {
     return null
 }
 
-function setupLobbies(io, socket, data) {
+function setupLobbies(io, socket, data, db) {
     session_data = data
 
     // Client will send 'checkLobby' to test lobby login and possibly permit the user
@@ -56,6 +56,7 @@ function setupLobbies(io, socket, data) {
         } else {
             session_data.lobby_logged_in = true
             socket.emit('theater:pushLobbyScene', session_data.lobby.id)
+            socket.join(session_data.lobby.id)
             session_data.lobby.addConnection(socket)
         }
     })
@@ -65,6 +66,20 @@ function setupLobbies(io, socket, data) {
         session_data.lobby = createNewLobby(name, privacy, description, password)
         session_data.lobby_logged_in = true
         socket.emit('theater:pushLobbyScene', session_data.lobby.id)
+        socket.join(session_data.lobby.id)
+    })
+
+    socket.on("chat:sendMessage", (message) => {
+        let username
+
+        db.query("SELECT * FROM users WHERE auth_id = '" + socket.auth_id + "'", function (err, result) {
+            if (err) throw err;
+            if (result.length !== 0) {
+                console.log("Search Result: " + result[0].username)
+                io.to(session_data.lobby.id).emit("chat:propogateMessage", result[0].username, message)
+            }
+        })
+        
     })
 }
 
