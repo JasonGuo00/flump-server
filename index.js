@@ -57,12 +57,11 @@ io.on('connection', async (socket) => {
 
                 socket.auth_id = auth_id
 
-                db.query("SELECT * FROM users WHERE auth_id = '" + auth_id + "'", function (err, result) {
+                db.query("SELECT * FROM users WHERE auth_id = ?", [auth_id], function (err, result) {
                     if (err) throw err;
-                    console.log("Search Result: " + result);
                     if (result.length === 0) {
                         console.log("Creating new User")
-                        db.query("INSERT INTO users(auth_id, creation) VALUES('" + auth_id + "', '" + new Date().toISOString().slice(0, 19).replace('T', ' ') + "')", function (err, result) {
+                        db.query("INSERT INTO users(auth_id, creation) VALUES(?, ?)", [auth_id, new Date().toISOString().slice(0, 19).replace('T', ' ')], function (err, result) {
                             if (err) throw err;
                             console.log("Insert Result: " + result);
                         });

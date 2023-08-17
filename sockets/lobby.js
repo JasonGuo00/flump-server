@@ -72,7 +72,7 @@ function setupLobbies(io, socket, data, db) {
     socket.on("chat:sendMessage", (message) => {
         let username
 
-        db.query("SELECT * FROM users WHERE auth_id = '" + socket.auth_id + "'", function (err, result) {
+        db.query("SELECT * FROM users WHERE auth_id = ?", [socket.auth_id], function (err, result) {
             if (err) throw err;
             if (result.length !== 0) {
                 console.log("Search Result: " + result[0].username)
