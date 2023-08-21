@@ -8,6 +8,7 @@ const mysql = require('mysql');
 const { setupLobbies, disconnectLobby } = require('./sockets/lobby.js')
 const { setupTheater } = require('./sockets/theater.js')
 const { setupShareScreen } = require('./sockets/sharescreen.js')
+const { setupProfile } = require('./sockets/profile.js')
 
 const db = mysql.createConnection({
     host: "localhost",
@@ -71,6 +72,7 @@ io.on('connection', async (socket) => {
                 setupLobbies(io, socket, session_data, db)
                 setupTheater(io, socket, session_data)
                 setupShareScreen(io, socket, session_data)
+                setupProfile(io, socket, db)
 
                 // Sent automatically when the client disconnects from the server
                 socket.on('disconnect', () => {
