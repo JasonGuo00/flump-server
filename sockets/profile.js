@@ -12,6 +12,7 @@ function setupProfile(io, socket, db) {
         setUsername(db, sessionInfo)
         setEmail(db, sessionInfo)
         setBio(db, sessionInfo)
+        setColor(db, sessionInfo)
         socket.emit('profile:changesReceived')
     })
 }
@@ -37,6 +38,15 @@ function setEmail(db, sessionInfo) {
 
 function setBio(db, sessionInfo) {
     db.query("UPDATE users SET bio = ? WHERE auth_id = ?", [sessionInfo.bio, sessionInfo.auth_id], function (err, result) {
+        if(err) {
+            throw err
+        }
+        console.log('Updated bio: ' + result)
+    })
+}
+
+function setColor(db, sessionInfo) {
+    db.query("UPDATE users SET color = ? WHERE auth_id = ?", [sessionInfo.color, sessionInfo.auth_id], function (err, result) {
         if(err) {
             throw err
         }
