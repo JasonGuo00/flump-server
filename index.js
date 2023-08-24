@@ -83,13 +83,8 @@ io.on('connection', async (socket) => {
             }
         })
     })
-
-
-    
 })
 
 server.listen(35565, () => {
-    console.log('Server listening on port 35565')
-
-    
+    console.log('Server listening on port 35565')    
 })

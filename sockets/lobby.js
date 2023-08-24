@@ -3,20 +3,54 @@ const Lobby = require('../yt_lobby.js')
 let session_data
 let lobbies = []
 
-function createNewLobby(name, privacy, description, password) {
+// Recreates all persistent lobbies in the database.  Prints out a list of their names when complete.
+async function recreatePersistentLobbies(db) {
+    // Retrieve all of the persistent lobbies
+    const results = await new Promise((resolve, reject) => {
+        db.query('SELECT * FROM lobbies', [], function(err, results) {
+            if(err){reject(err)}
+            else {
+                resolve(results)
+            }
+        })
+    })
+    // Throw errors here
+    if(results instanceof Error) {return}
+    else {
+        // For each persistent lobby:
+        for(var i = 0; i < results.length; i++) {
+            let current = results[i]
+            // Recreate the lobby
+            let lobby = new Lobby(current.lobby_id, current.lobby_name, current.privacy, current.description, current.password, 'yes', db, current.owner_auth_id, true)
+            lobbies.push(lobby)
+        }
+        console.log("All previous persistent lobbies loaded: ")
+        console.log("---- Persistent Lobbies ----")
+        for(var i = 0; i < lobbies.length; i++) {
+            console.log(lobbies[i].name)
+        }
+        console.log('-------- End of List --------')
+    }
+}
+
+function createNewLobby(name, privacy, description, password, persistence, db, owner_auth_id) {
     let id = createLobbyID()
 
     while (searchLobbyId(id) != null) {
         id = searchLobbyId(id)
     }
 
-    let lobby = new Lobby(id, name, privacy, description, password);
-
+    let lobby = new Lobby(id, name, privacy, description, password, persistence, db, owner_auth_id, false);
     lobbies.push(lobby);
 
+    // Push the lobby to the DB if it is persistent
+    lobby.checkPersistence()
+
+    console.log(lobbies)
     console.log(id);
 
-    return lobby;
+    return lobby; 
+    
 }
 
 function createLobbyID() {
@@ -43,6 +77,7 @@ function searchLobbyId(id) {
 
 function setupLobbies(io, socket, data, db) {
     session_data = data
+    recreatePersistentLobbies(db)
 
     // Client will send 'checkLobby' to test lobby login and possibly permit the user
     socket.on('theater:checkLobby', (lobby_id, lobby_password) => {
@@ -62,8 +97,8 @@ function setupLobbies(io, socket, data, db) {
     })
 
     // Client will send 'createLobby' to create a lobby
-    socket.on('theater:createLobby', (name, privacy, description, password) => {
-        session_data.lobby = createNewLobby(name, privacy, description, password)
+    socket.on('theater:createLobby', (name, privacy, description, password, persistence, owner_auth_id) => {
+        session_data.lobby = createNewLobby(name, privacy, description, password, persistence, db, owner_auth_id)
         session_data.lobby_logged_in = true
         socket.emit('theater:pushLobbyScene', session_data.lobby.id)
         socket.join(session_data.lobby.id)
