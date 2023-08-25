@@ -12,7 +12,7 @@ class Lobby {
         this.persistence = persistence
         this.db = db
         this.owner_auth_id = owner_auth_id
-        if(persistence === 'yes' && startup) {
+        if(this.persistence === 'yes' && this.startup) {
             this.startup()
         }
     }
@@ -36,7 +36,7 @@ class Lobby {
             console.log("Video ID was pushed")
             const length = this.playlist.push(URL)
             // Link video to database if lobby is persistent
-            if(persistence === 'yes') {
+            if(this.persistence === 'yes') {
                 this.dbAddToPlaylist(URL)
             }
             return length
@@ -52,7 +52,7 @@ class Lobby {
         if(!this.loop) {
             this.playlist.shift()
             console.log("Video removed")
-            if(persistence === 'yes') {
+            if(this.persistence === 'yes') {
                 this.dbRemoveFromPlaylist()
             }
         }
@@ -70,6 +70,9 @@ class Lobby {
     loopVideos() {
         const url = this.playlist.shift()
         this.playlist.push(url)
+        if(this.persistence === 'yes') {
+            this.dbLoop()
+        }
     }
 
     // Check for duplicate videos
@@ -142,6 +145,22 @@ class Lobby {
             this.db.query('INSERT INTO playlist(lobby_id, video_id, position) VALUES(?, ?, ?)', [this.id, this.playlist[i], i], function(err, results) {
                 if(err){throw err}
                 console.log('Video added to the database playlist')
+            })
+        }
+    }
+
+    // If the persistent lobby has loop enabled, reflect it in the database
+    async dbLoop() {
+        const result = await new Promise((resolve, reject) => {
+            this.db.query('UPDATE playlist SET position = ? WHERE lobby_id = ? AND position = ?', [this.playlist.length, this.id, 0], function(err, result) {
+                if(err){reject(err)}
+                else{resolve(result)}
+            })
+        })
+        if(result instanceof Error) {throw result}
+        else {
+            this.db.query('UPDATE playlist SET position = position - 1 WHERE lobby_id = ?', [this.id], function(err, result) {
+                if(err) {throw err}
             })
         }
     }
