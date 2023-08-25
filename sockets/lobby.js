@@ -43,8 +43,12 @@ function createNewLobby(name, privacy, description, password, persistence, db, o
     let lobby = new Lobby(id, name, privacy, description, password, persistence, db, owner_auth_id, false);
     lobbies.push(lobby);
 
-    // Push the lobby to the DB if it is persistent
-    lobby.checkPersistence()
+    // Push the lobby to the DB if it is persistent -> method returns true if the lobby is pushed to the database
+    if(lobby.checkPersistence()) {
+        db.query('UPDATE users SET num_lobbies = num_lobbies - 1 WHERE auth_id = ?', [owner_auth_id], function(err, result) {
+            if(err){throw err}
+        })
+    }
 
     console.log(lobbies)
     console.log(id);
