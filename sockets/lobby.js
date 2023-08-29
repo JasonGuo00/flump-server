@@ -81,6 +81,10 @@ function setupLobbies(io, socket, data, db) {
         })
         
     })
+
+    socket.on('theater:leaveLobby', () => {
+        disconnectLobby()
+    })
 }
 
 function disconnectLobby() {
