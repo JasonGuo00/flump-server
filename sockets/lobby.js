@@ -21,7 +21,7 @@ async function recreatePersistentLobbies(db) {
         for(var i = 0; i < results.length; i++) {
             let current = results[i]
             // Recreate the lobby
-            let lobby = new Lobby(current.lobby_id, current.lobby_name, current.privacy, current.description, current.password, 'yes', db, current.owner_auth_id, true)
+            let lobby = new Lobby(current.lobby_id, current.lobby_name, current.privacy, current.description, current.password, 'yes', db, current.owner_auth_id, true, "")
             lobbies.push(lobby)
         }
         console.log("All previous persistent lobbies loaded: ")
@@ -40,7 +40,7 @@ function createNewLobby(name, privacy, description, password, persistence, db, o
         id = searchLobbyId(id)
     }
 
-    let lobby = new Lobby(id, name, privacy, description, password, persistence, db, owner_auth_id, false);
+    let lobby = new Lobby(id, name, privacy, description, password, persistence, db, owner_auth_id, false, "");
     lobbies.push(lobby);
 
     // Push the lobby to the DB if it is persistent -> method returns true if the lobby is pushed to the database

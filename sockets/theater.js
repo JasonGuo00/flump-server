@@ -40,10 +40,10 @@ function setupTheater(io, socket, data) {
         if(length == 1) {
             // if length == 1, then that means before the video added, the list was empty
             // socket.emit('playVideo', lobby.playlist[0])
-            io.to('lobby1').emit('theater:playVideo', session_data.lobby.playlist[0])
+            io.to(session_data.lobby.id).emit('theater:playVideo', session_data.lobby.playlist[0])
         }
         // socket.emit('updatePlaylist', lobby.playlist);
-        io.to('lobby1').emit('theater:updatePlaylist', session_data.lobby.playlist)
+        io.to(session_data.lobby.id).emit('theater:updatePlaylist', session_data.lobby.playlist)
     })
     // Client will send 'goNext' when either the video ends, or user requests to skip
     socket.on('theater:goNext', () => {
@@ -56,8 +56,8 @@ function setupTheater(io, socket, data) {
         session_data.lobby.removeVideo()
         // socket.emit('playVideo', lobby.playlist[0])
         // socket.emit('updatePlaylist', lobby.playlist)
-        io.to('lobby1').emit('theater:playVideo', session_data.lobby.playlist[0])
-        io.to('lobby1').emit('theater:updatePlaylist', session_data.lobby.playlist)
+        io.to(session_data.lobby.id).emit('theater:playVideo', session_data.lobby.playlist[0])
+        io.to(session_data.lobby.id).emit('theater:updatePlaylist', session_data.lobby.playlist)
     })
     // Client will send 'toggleLoop' when they click the 'Loop' button
     socket.on('theater:toggleLoop', () => {
@@ -74,21 +74,34 @@ function setupTheater(io, socket, data) {
             prevState = playbackState
             console.log("Change detected: sending new info...")
             // socket.emit('theater:receiveInfo', playbackState, playbackTime)
-            io.to('lobby1').emit('theater:receiveInfo', playbackState, playbackTime)
+            io.to(session_data.lobby.id).emit('theater:receiveInfo', playbackState, playbackTime)
         }
     })
     // Every second, clients will send back playback time for server use -> a large difference in time is assumed to be a "scrub"
     socket.on('theater:updateTime', (playerTime) => {
         if(Math.abs(prevRuntime - playerTime) > 4) {
             // Consider it a scrub
-            io.to('lobby1').emit('theater:receiveInfo', prevState, playerTime)
+            io.to(session_data.lobby.id).emit('theater:receiveInfo', prevState, playerTime)
         }
         prevRuntime = playerTime
     })
 
     // Call the clients to update playback rate
     socket.on('theater:playbackRateChange', (playbackRate) => {
-        io.to('lobby1').emit('theater:rateChange', playbackRate)
+        io.to(session_data.lobby.id).emit('theater:rateChange', playbackRate)
+    })
+
+    // Twitch Stuff
+
+    socket.on('theater:joinTwitch', () => {
+        socket.emit('theater:changeChannel', session_data.lobby.twitch_channel)
+    })
+
+    
+    socket.on('theater:setChannel', (channel) => {
+        session_data.lobby.twitch_channel = channel
+        io.to(session_data.lobby.id).emit('theater:changeChannel', session_data.lobby.twitch_channel)
+        console.log(channel)
     })
 }
 

@@ -1,6 +1,6 @@
 class Lobby {
     // Constructor: lobby takes a name and a playlist
-    constructor(id, name, privacy, description, password, persistence, db, owner_auth_id, startup) {
+    constructor(id, name, privacy, description, password, persistence, db, owner_auth_id, startup, twitch_channel) {
         this.id = id
         this.name = name
         this.privacy = privacy
@@ -15,6 +15,7 @@ class Lobby {
         if(this.persistence === 'yes' && this.startup) {
             this.startup()
         }
+        this.twitch_channel = twitch_channel
     }
 
     addConnection(socket) {

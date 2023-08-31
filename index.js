@@ -32,7 +32,6 @@ app.get('/login', (req, res) => {
 
 io.on('connection', async (socket) => {
     console.log('A client connected')
-    socket.join('lobby1')
 
     
     // Testing
