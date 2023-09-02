@@ -128,10 +128,10 @@ function setupLobbies(io, socket, data, db) {
 
 function disconnectLobby() {
     if (session_data.lobby === null || session_data.lobby_logged_in === false) {
-        socket.emit('theater:noLobby')
+        // socket.emit('theater:noLobby')
         return
     }
-    session_data.lobby.removeConnection(socket)
+    // session_data.lobby.removeConnection(socket)
 
     if (session_data.lobby.connectionLength() === 0) {
         lobbies.splice(lobbies.indexOf(session_data.lobby), 1)
